@@ -5,6 +5,8 @@ exports.getUsers = async (req, res, next) => {
   const { id } = req.params;
   const { friendsOfMyFriends, suggestedFriends } = req.query;
 
+  if (friendsOfMyFriends && suggestedFriends) throw new Error('Choose only one query');
+
   const filter = { friends: { $in: id } };
   let [users, count] = await Promise.all([User.find(filter).lean(), User.find(filter).count()]);
 
