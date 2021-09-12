@@ -14,10 +14,7 @@ exports.getUsers = async (req, res, next) => {
       .filter((u) => Number(u) !== Number(id))
       .sort((a, b) => a - b);
 
-    let uIds;
-
-    if (friendsOfMyFriends) uIds = removeDuplicates(usrsIds);
-    if (suggestedFriends) uIds = keepDuplicates(usrsIds);
+    const uIds = friendsOfMyFriends ? removeDuplicates(usrsIds) : keepDuplicates(usrsIds);
 
     const [friendsOfFriends, c] = await Promise.all([
       User.find({ id: { $in: uIds }, friends: { $not: { $in: [Number(id)] } } }).lean(),
