@@ -1,61 +1,32 @@
 const { User } = require('../../models');
+const { keepDuplicates, removeDuplicates } = require('../../lib/keepOrRemoveDuplicates');
+
 exports.getUsers = async (req, res, next) => {
   const { id } = req.params;
-  const { friends, friendsOfMyFriends, suggestedFriends } = req.query;
-  console.log(friends);
+  const { friendsOfMyFriends, suggestedFriends } = req.query;
 
   const filter = { friends: { $in: id } };
-  // const fofFilter = {  }
-
-  // const usrs = await User.aggregate([
-  //   { $match: { friends: { $in: [Number(id)] } } },
-  //   { $project: { friends: 1, _id: 0 } },
-  // ]);
-  // console.log(usrs);
-
-  ////////////////////////////////////////////////////////////
-  /*
-  let usrs = await (
-    await User.find({ friends: { $in: id } }).select('friends -_id')
-  )
-    .flatMap((u) => u.friends)
-    .filter((u) => Number(u) !== Number(id))
-    .sort((a, b) => a - b);
-
-  usrs = Array.from(new Set(usrs));
-  console.log(usrs);
-
-  const fofFilter = { friends: { $in: [usrs], $not: { $in: [Number(id)] } } };
-  const fofs = await User.find(fofFilter).lean();
-
-  // console.log(fofs);
-
-  //////////////////////////////////////////////////////////////////////
-  */
-
   let [users, count] = await Promise.all([User.find(filter).lean(), User.find(filter).count()]);
 
-  if (friendsOfMyFriends) {
+  if (friendsOfMyFriends || suggestedFriends) {
     const usrsIds = users
       .flatMap((u) => u.friends)
       .filter((u) => Number(u) !== Number(id))
       .sort((a, b) => a - b);
 
-    const uIds = Array.from(new Set(usrsIds));
-    console.log(uIds);
+    let uIds;
+
+    if (friendsOfMyFriends) uIds = removeDuplicates(usrsIds);
+    if (suggestedFriends) uIds = keepDuplicates(usrsIds);
 
     const [friendsOfFriends, c] = await Promise.all([
-      User.find({ id: { $in: uIds } }).lean(),
-      User.find({ id: { $in: uIds } }).count(),
+      User.find({ id: { $in: uIds }, friends: { $not: { $in: [Number(id)] } } }).lean(),
+      User.find({ id: { $in: uIds }, friends: { $not: { $in: [Number(id)] } } }).count(),
     ]);
 
-    console.log(friendsOfFriends);
     users = friendsOfFriends;
     count = c;
   }
-
-  // const fof = await User.find({ 'friends': { $in: users } });
-  // console.log(fof);
 
   res.send({ message: 'Success fetching users', count, data: users });
 };
