@@ -1,14 +1,18 @@
 const { User } = require('../../models');
 const { keepDuplicates, removeDuplicates } = require('../../lib/keepOrRemoveDuplicates');
+const { BAD_REQUEST, NOT_FOUND } = require('../../middlewares/error-handling/errorConstants');
 
 exports.getUsers = async (req, res, next) => {
   const { id } = req.params;
   const { friendsOfMyFriends, suggestedFriends } = req.query;
 
-  if (friendsOfMyFriends && suggestedFriends) throw new Error('Choose only one query');
+  if (friendsOfMyFriends && suggestedFriends) throw new Error(BAD_REQUEST);
 
-  const filter = { friends: { $in: id } };
+  let filter = { friends: { $in: id } };
+
   let [users, count] = await Promise.all([User.find(filter).lean(), User.find(filter).count()]);
+
+  if (!users) throw new Error(NOT_FOUND);
 
   if (friendsOfMyFriends || suggestedFriends) {
     const usrsIds = users

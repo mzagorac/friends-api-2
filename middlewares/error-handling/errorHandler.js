@@ -4,11 +4,26 @@ const environments = require('../../config/environments');
 module.exports = (err, req, res, next) => {
   const error = {};
 
+  console.log('###########################################################################');
+  console.log(err.message);
+
   switch (err.message) {
     case errorMessages.NOT_FOUND:
       error.message = 'Not Found';
       error.status = 404;
-      error.errroCode = 4;
+      error.errorCode = 4;
+      break;
+
+    case errorMessages.BAD_REQUEST:
+      error.message = 'Bad Request';
+      error.status = 400;
+      error.errorCode = 4;
+      break;
+
+    case errorMessages.MISSING_PARAMS:
+      error.message = 'Missing Params';
+      error.status = 400;
+      error.errorCode = 4;
       break;
 
     default:
